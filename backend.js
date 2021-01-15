@@ -62,6 +62,10 @@ type Query {
         published:Int
         author:String
     ) : Recipe
+    editRecipe(
+        name:String!
+        setDirectionTo:[String]
+    ):Recipe
 }
 `
 
@@ -79,11 +83,11 @@ const resolvers = {
             }
             if (args.ingredients) {
                 console.log(args.ingredients)
-                return recipes.filter(recipe=>recipe.ingredients.includes(args.ingredients))
+                return recipes.filter(recipe => recipe.ingredients.includes(args.ingredients))
             }
 
-            if(args.tags){
-                return recipes.filter(recipe=>recipe.tags.includes(args.tags))
+            if (args.tags) {
+                return recipes.filter(recipe => recipe.tags.includes(args.tags))
             }
             else {
                 return recipes
@@ -107,6 +111,16 @@ const resolvers = {
                 authors = authors.concat({ name: args.author, id: uuid() })
             }
             return recipe
+        },
+        editRecipe: (root, args) => {
+            const recipe = recipes.find(recipe => recipe.name === args.name)
+            if (!recipe) {
+                return null
+            }
+
+            const updatedRecipe = { ...recipe, direction: args.setDirectionTo }
+            recipes = recipes.map(recipe => recipe.name === args.name ? updatedRecipe : recipe)
+            return updatedRecipe
         }
     }
 }
