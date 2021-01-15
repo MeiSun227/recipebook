@@ -6,11 +6,12 @@ let authors = [{
     name: 'Mei'
 }]
 
+
 let recipes = [{
     id: "3d594650-3436-11e9-bc57-8b80ba54c431",
     name: 'Garlic shrimp pasta',
     cookTime: 20,
-    ingredients: ['250g shrimps', '150g pasta', '2 tbs garlic', '2 tbs butter'],
+    ingredients: ['shrimps', 'pasta', 'garlic', 'butter'],
     direction: ['sdsadasdasdasdasdas', 'sdsdasdasdas'],
     tags: ['simple', 'fast prepare'],
     author: 'Mei',
@@ -46,6 +47,8 @@ type Query {
     allAuthors:[Author!]
     recipeCount:Int!
     postedCount:Int!
+    cuisineCount: Int!
+    findRecipe(cuisine:String,ingredients:String,tags:String):[Recipe!]
   }
 
   type Mutation {
@@ -66,6 +69,26 @@ const resolvers = {
     Query: {
         postedCount: () => authors.length,
         recipeCount: () => recipes.length,
+        cuisineCount: () => { return recipes.map(recipe => recipe.cuisine).length },
+        findRecipe: (root, args) => {
+            if (args.cuisine && args.ingredients) {
+                return recipes.filter(recipe => recipe.cuisine === args.cuisine && recipe.ingredients.includes(args.ingredients));
+            }
+            if (args.cuisine) {
+                return recipes.filter(recipe => recipe.cuisine === args.cuisine);
+            }
+            if (args.ingredients) {
+                console.log(args.ingredients)
+                return recipes.filter(recipe=>recipe.ingredients.includes(args.ingredients))
+            }
+
+            if(args.tags){
+                return recipes.filter(recipe=>recipe.tags.includes(args.tags))
+            }
+            else {
+                return recipes
+            }
+        },
         allRecipes: () => recipes,
         allAuthors: () => {
             return authors.map(author => {
