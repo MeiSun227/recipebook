@@ -11,7 +11,8 @@ let recipes = [{
     id: "3d594650-3436-11e9-bc57-8b80ba54c431",
     name: 'Garlic shrimp pasta',
     cookTime: 20,
-    ingredients: ['shrimps', 'pasta', 'garlic', 'butter'],
+    ingredientsName: ["shrimp", "garlic", "butter"],
+    ingredientsAmount: [250, 10, 10],
     direction: ['sdsadasdasdasdasdas', 'sdsdasdasdas'],
     tags: ['simple', 'fast prepare'],
     author: 'Mei',
@@ -30,11 +31,16 @@ type Author{
     postedCount:Int!    
 }
 
+type Ingredient{
+    ingredientsName:[String],
+    ingredientsAmount:[Int]
+}
+
 type Recipe{
     id:ID!,
     name:String,
     cookTime:Int,
-    ingredients:[String],
+    ingredients:Ingredient!,
     direction:[String],
     tags:[String],
     cuisine:String,
@@ -48,14 +54,16 @@ type Query {
     recipeCount:Int!
     postedCount:Int!
     cuisineCount: Int!
-    findRecipe(cuisine:String,ingredients:String,tags:String):[Recipe!]
+    findRecipe(cuisine:String,ingredientsName:String,tags:String):[Recipe!]
   }
 
   type Mutation {
+    
     addRecipe(
         name: String!
         cookTime:Int
-        ingredients:[String],
+        ingredientsName:[String],
+        ingredientsAmount:[Int],
         direction:[String],
         tags:[String],
         cuisine:String,
@@ -71,19 +79,20 @@ type Query {
 
 const resolvers = {
     Query: {
+        allRecipes: () => recipes,
         postedCount: () => authors.length,
         recipeCount: () => recipes.length,
         cuisineCount: () => { return recipes.map(recipe => recipe.cuisine).length },
         findRecipe: (root, args) => {
-            if (args.cuisine && args.ingredients) {
-                return recipes.filter(recipe => recipe.cuisine === args.cuisine && recipe.ingredients.includes(args.ingredients));
+            if (args.cuisine && args.ingredientsName) {
+                return recipes.filter(recipe => recipe.cuisine === args.cuisine && recipe.ingredientsName.includes(args.ingredientsName));
             }
             if (args.cuisine) {
                 return recipes.filter(recipe => recipe.cuisine === args.cuisine);
             }
-            if (args.ingredients) {
-                console.log(args.ingredients)
-                return recipes.filter(recipe => recipe.ingredients.includes(args.ingredients))
+            if (args.ingredientsName) {
+                console.log(args.ingredientsName)
+                return recipes.filter(recipe => recipe.ingredientsName.includes(args.ingredientsName))
             }
 
             if (args.tags) {
@@ -93,7 +102,6 @@ const resolvers = {
                 return recipes
             }
         },
-        allRecipes: () => recipes,
         allAuthors: () => {
             return authors.map(author => {
                 return {
@@ -101,8 +109,18 @@ const resolvers = {
                     postedCount: recipes.filter(recipe => recipe.author === author.name).length
                 }
             })
+        },
+        allRecipes: () => recipes,
+    },
+    Recipe: {
+        ingredients: (root) => {
+            return {
+                ingredientsName: root.ingredientsName,
+                ingredientsAmount: root.ingredientsAmount
+            }
         }
     },
+
     Mutation: {
         addRecipe: (root, args) => {
             const recipe = { ...args, id: uuid() }
@@ -117,6 +135,7 @@ const resolvers = {
             if (!recipe) {
                 return null
             }
+
 
             const updatedRecipe = { ...recipe, direction: args.setDirectionTo }
             recipes = recipes.map(recipe => recipe.name === args.name ? updatedRecipe : recipe)
