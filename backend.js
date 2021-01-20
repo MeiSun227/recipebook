@@ -1,3 +1,4 @@
+
 const { ApolloServer, gql } = require('apollo-server');
 const { v1: uuid } = require('uuid');
 
@@ -70,6 +71,9 @@ type Query {
         published:Int
         author:String
     ) : Recipe
+    deleteRecipe(
+        id:ID
+        ):Recipe
     editRecipe(
         name:String!
         setDirectionTo:[String]
@@ -140,6 +144,13 @@ const resolvers = {
             const updatedRecipe = { ...recipe, direction: args.setDirectionTo }
             recipes = recipes.map(recipe => recipe.name === args.name ? updatedRecipe : recipe)
             return updatedRecipe
+        },
+        deleteRecipe: (root, args) => {
+            const newRecipes = recipes.filter((recipe) => args.id !== recipe.id)
+            recipes = newRecipes;
+            console.log(recipes)
+            console.log(newRecipes)
+            return recipes;
         }
     }
 }
@@ -149,5 +160,6 @@ const server = new ApolloServer({
 })
 
 server.listen().then(({ url }) => {
+    console.log(url)
     console.log(`Server ready at ${url}`)
 })
