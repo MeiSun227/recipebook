@@ -1,28 +1,27 @@
 
 const { ApolloServer, gql } = require('apollo-server');
-const { v1: uuid } = require('uuid');
+const mongoose = require('mongoose')
+require('dotenv').config()
+
+const Recipe = require('./models/recipe')
+const Author=require('./models/author')
+const Ingredient = require('./models/ingredient')
+
+const url = process.env.MONGODB_URI
+console.log('connecting to', url)
+
+mongoose.connect(url, { useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify: false, useCreateIndex: true })
+    .then(() => {
+        console.log('connected to MongoDB')
+    })
+    .catch((error) => {
+        console.log('error connection to MongoDB:', error.message)
+    })
 
 let authors = [{
     id: "a12",
     name: 'Mei'
 }]
-
-
-let recipes = [{
-    id: "3d594650-3436-11e9-bc57-8b80ba54c431",
-    name: 'Garlic shrimp pasta',
-    cookTime: 20,
-    ingredientsName: ["shrimp", "garlic", "butter"],
-    ingredientsAmount: [250, 10, 10],
-    direction: ['sdsadasdasdasdasdas', 'sdsdasdasdas'],
-    tags: ['simple', 'fast prepare'],
-    author: 'Mei',
-    cuisine: 'Italian',
-    published: 2019
-}]
-
-
-
 
 const typeDefs = gql`
 
@@ -83,9 +82,9 @@ type Query {
 
 const resolvers = {
     Query: {
-        allRecipes: () => recipes,
+        allRecipes: () => Recipe.find({}),
         postedCount: () => authors.length,
-        recipeCount: () => recipes.length,
+        recipeCount: () => Recipe.collection.countDocuments(),
         cuisineCount: () => { return recipes.map(recipe => recipe.cuisine).length },
         findRecipe: (root, args) => {
             if (args.cuisine && args.ingredientsName) {
@@ -114,7 +113,6 @@ const resolvers = {
                 }
             })
         },
-        allRecipes: () => recipes,
     },
     Recipe: {
         ingredients: (root) => {
@@ -126,11 +124,20 @@ const resolvers = {
     },
 
     Mutation: {
-        addRecipe: (root, args) => {
-            const recipe = { ...args, id: uuid() }
-            recipes = recipes.concat(recipe)
-            if (!authors.find(author => author.name === args.name)) {
-                authors = authors.concat({ name: args.author, id: uuid() })
+        addRecipe: async (root, args) => {
+            const recipe = new Recipe({ ...args })
+            try {
+                console.log(recipe)
+                await recipe.save()
+                if (!Author.findOne({ name: args.name })) {
+                    author = new Author({ ...args })
+                    author.save()
+                }
+            }
+            catch (error) {
+                throw new Error(error.message, {
+                    invalidArgs: args,
+                })
             }
             return recipe
         },
