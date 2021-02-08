@@ -4,7 +4,7 @@ const mongoose = require('mongoose')
 require('dotenv').config()
 
 const Recipe = require('./models/recipe')
-const Author=require('./models/author')
+const Author = require('./models/author')
 const Ingredient = require('./models/ingredient')
 
 const url = process.env.MONGODB_URI
@@ -82,10 +82,12 @@ type Query {
 
 const resolvers = {
     Query: {
-        allRecipes: () => Recipe.find({}),
-        postedCount: () => authors.length,
+        allRecipes: async () => {
+            const recipes = await Recipe.find({})
+            return recipes
+        },
         recipeCount: () => Recipe.collection.countDocuments(),
-        cuisineCount: () => { return recipes.map(recipe => recipe.cuisine).length },
+
         findRecipe: (root, args) => {
             if (args.cuisine && args.ingredientsName) {
                 return recipes.filter(recipe => recipe.cuisine === args.cuisine && recipe.ingredientsName.includes(args.ingredientsName));
@@ -105,11 +107,15 @@ const resolvers = {
                 return recipes
             }
         },
-        allAuthors: () => {
+        allAuthors: async () => {
+            const authors = await Author.find({}).populate('recipe')
+            console.log(authors)
             return authors.map(author => {
                 return {
-                    ...author,
-                    postedCount: recipes.filter(recipe => recipe.author === author.name).length
+                    name: author.name,
+                    id: author.id,
+                    postedCount: author.recipes.length
+
                 }
             })
         },
@@ -126,13 +132,14 @@ const resolvers = {
     Mutation: {
         addRecipe: async (root, args) => {
             const recipe = new Recipe({ ...args })
+            let author = await Author.findOne({ name: args.author });
             try {
-                console.log(recipe)
-                await recipe.save()
-                if (!Author.findOne({ name: args.name })) {
-                    author = new Author({ ...args })
-                    author.save()
+                if (!author) {
+                    author = new Author({ name: args.author })
                 }
+                author.recipes = author.recipes.concat(recipe.id)
+                await author.save()
+                await recipe.save()
             }
             catch (error) {
                 throw new Error(error.message, {

@@ -6,9 +6,10 @@ const authorSchema = new mongoose.Schema({
         required: true,
         unique:true
     },
-    postedCount:{
-        type:Number
-    }
+    recipes:[{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Recipe"
+      }]
 })
 
 module.exports = mongoose.model('Author', authorSchema)
