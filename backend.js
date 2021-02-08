@@ -88,7 +88,8 @@ const resolvers = {
         },
         recipeCount: () => Recipe.collection.countDocuments(),
 
-        findRecipe: (root, args) => {
+        findRecipe: async (root, args) => {
+            let recipes= await Recipe.find({})
             if (args.cuisine && args.ingredientsName) {
                 return recipes.filter(recipe => recipe.cuisine === args.cuisine && recipe.ingredientsName.includes(args.ingredientsName));
             }
